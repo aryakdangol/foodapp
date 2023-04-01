@@ -6,7 +6,7 @@ public interface TokenRepository {
 
     public String getToken(String key);
 
-    public String saveToken(String token);
+    public void saveToken(String key, String token);
 
 
 
