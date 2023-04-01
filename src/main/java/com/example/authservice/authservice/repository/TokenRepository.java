@@ -8,6 +8,8 @@ public interface TokenRepository {
 
     public void saveToken(String key, String token);
 
+    public void deleteToken(String key);
+
 
 
 

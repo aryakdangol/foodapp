@@ -5,19 +5,19 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.example.authservice.authservice.dto.UserRequestDTO;
 import com.example.authservice.authservice.dto.UserResponseDTO;
 import com.example.authservice.authservice.dto.ValidateTokenDTO;
-import com.example.authservice.authservice.exception.UserExistException;
+import com.example.authservice.authservice.exception.AuthServiceException;
 import com.example.authservice.authservice.model.UserModel;
 import com.example.authservice.authservice.repository.TokenRepository;
 import com.example.authservice.authservice.repository.UserRepository;
 import com.example.authservice.authservice.service.UserService;
 import com.example.authservice.authservice.util.AppConstants;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Date;
-import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -29,11 +29,15 @@ public class UserServiceImpl implements UserService {
     BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Override
-    public UserResponseDTO register(UserRequestDTO userResponseDTO) {
+    public UserResponseDTO register(UserRequestDTO userResponseDTO) throws AuthServiceException {
         String username = userResponseDTO.getUsername();
 
-        if(checkUserExist(username)){
-            throw new UserExistException(username);
+        if(checkUserExist(username) != null){
+            throw new AuthServiceException(
+                    HttpStatus.BAD_REQUEST,
+                    "Username: " + username + " already exists",
+                    "ERR_ALREADY_EXISTS"
+            );
         }
         UserModel user = new UserModel();
         user.setUsername(username);
@@ -45,18 +49,33 @@ public class UserServiceImpl implements UserService {
        String token = generateJwt(savedUser.getUsername(), savedUser.getId());
        tokenRepository.saveToken(savedUser.getId(), token);
 
-       UserResponseDTO response = new UserResponseDTO();
-       response.setUsername(savedUser.getUsername());
-       response.setAuthcode(token);
-       response.setUserId(savedUser.getId());
-
-
-       return response;
+       return generateUserResponseDTO(savedUser, token);
     }
 
     @Override
-    public UserResponseDTO login(UserRequestDTO userRequestDTO) {
-        return null;
+    public UserResponseDTO login(UserRequestDTO userRequestDTO) throws AuthServiceException {
+        String username = userRequestDTO.getUsername();
+
+        UserModel user = checkUserExist(username);
+
+        if(user == null){
+            throw new AuthServiceException(HttpStatus.NOT_FOUND,
+                    "Can't find user with username: " + username,
+                    "ERR_NOT_FOUND");
+        }
+
+        if(!bCryptPasswordEncoder.matches(userRequestDTO.getPassword(), user.getPassword())){
+            throw new AuthServiceException(HttpStatus.FORBIDDEN,
+                    "Password is invalid!",
+                    "ERR_AUTHENTICATION_FAIL"
+                    );
+        }
+
+        String token = generateJwt(user.getId(), user.getUsername());
+
+        tokenRepository.deleteToken(user.getId());
+        tokenRepository.saveToken(user.getId(), token);
+        return generateUserResponseDTO(user, token);
     }
 
     @Override
@@ -64,9 +83,9 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
-    private Boolean checkUserExist(String username){
+    private UserModel checkUserExist(String username){
         Optional<UserModel> user = userRepository.findByUsername(username);
-        return user.isPresent();
+        return user.orElse(null);
     }
 
     private String generateJwt(String username, String userid){
@@ -77,6 +96,14 @@ public class UserServiceImpl implements UserService {
                 .withClaim("username", username)
                 .withExpiresAt(new Date(System.currentTimeMillis() + AppConstants.TOKEN_EXPIRATION))
                 .sign(Algorithm.HMAC512(AppConstants.SECRET_KEY));
+    }
+
+    private UserResponseDTO generateUserResponseDTO(UserModel user, String token){
+        UserResponseDTO response = new UserResponseDTO();
+        response.setUsername(user.getUsername());
+        response.setAuthcode(token);
+        response.setUserId(user.getId());
+        return response;
     }
 
 }

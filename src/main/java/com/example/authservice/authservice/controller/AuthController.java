@@ -4,6 +4,7 @@ package com.example.authservice.authservice.controller;
 import com.example.authservice.authservice.dto.UserRequestDTO;
 import com.example.authservice.authservice.dto.UserResponseDTO;
 import com.example.authservice.authservice.dto.ValidateTokenDTO;
+import com.example.authservice.authservice.exception.AuthServiceException;
 import com.example.authservice.authservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -22,14 +23,14 @@ public class AuthController {
     UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRequestDTO userRequestDTO){
+    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRequestDTO userRequestDTO) throws AuthServiceException {
         return new ResponseEntity<>(userService.register(userRequestDTO), HttpStatus.CREATED);
 
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponseDTO> loginUser(@Valid @RequestBody UserRequestDTO userRequestDTO){
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<UserResponseDTO> loginUser(@Valid @RequestBody UserRequestDTO userRequestDTO)throws AuthServiceException{
+        return new ResponseEntity<>(userService.login(userRequestDTO), HttpStatus.OK);
     }
 
     @PostMapping("/validate")

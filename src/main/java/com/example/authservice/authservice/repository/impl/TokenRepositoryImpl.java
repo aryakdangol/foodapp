@@ -34,4 +34,14 @@ public class TokenRepositoryImpl implements TokenRepository {
             ex.printStackTrace();
         }
     }
+
+    @Override
+    public void deleteToken(String key) {
+        try {
+            client.deleteState(AppConstants.STATESTORE_NAME, key).block();
+        } catch (Exception ex) {
+            logger.error("Error while deleting token in cache");
+            ex.printStackTrace();
+        }
+    }
 }
