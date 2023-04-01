@@ -2,6 +2,7 @@ package com.example.authservice.authservice.service.impl;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.example.authservice.authservice.dto.UserRequestDTO;
 import com.example.authservice.authservice.dto.UserResponseDTO;
 import com.example.authservice.authservice.dto.ValidateTokenDTO;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -79,8 +82,49 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ValidateTokenDTO validate(ValidateTokenDTO validateTokenDTO) {
-        return null;
+    public ValidateTokenDTO validate(String bearerToken, ValidateTokenDTO validateTokenDTO) throws AuthServiceException {
+        if(bearerToken.isEmpty() || bearerToken.isBlank() || !bearerToken.startsWith("Bearer ")){
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Please provide a token",
+                    "ERR_TOKEN_EMPTY"
+            );
+        }
+
+        String reqToken = bearerToken.replace("Bearer ", "");
+
+        Optional<String> cachedToken = tokenRepository.getToken(validateTokenDTO.getUserid());
+
+        if(cachedToken.isEmpty()){
+            try{
+                String decoded = JWT.require(Algorithm.HMAC512(AppConstants.SECRET_KEY))
+                        .build()
+                        .verify(reqToken)
+                        .getSubject();
+                System.out.println("DECODED STRING: " + decoded);
+                validateTokenDTO.setToken(reqToken);
+                return validateTokenDTO;
+            }
+            catch(RuntimeException ex){
+                throw new AuthServiceException(
+                        HttpStatus.UNAUTHORIZED,
+                        ex.getMessage(),
+                        "ERR_INVALID_TOKEN"
+                );
+            }
+
+        }
+
+        if(!reqToken.matches(cachedToken.get())){
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid Token!",
+                    "ERR_INVALID_TOKEN"
+            );
+        }
+
+        validateTokenDTO.setToken(cachedToken.get());
+        return validateTokenDTO;
     }
 
     private UserModel checkUserExist(String username){

@@ -9,6 +9,6 @@ public interface UserService {
 
     public UserResponseDTO register(UserRequestDTO userResponseDTO) throws AuthServiceException;
     public UserResponseDTO login(UserRequestDTO userRequestDTO) throws AuthServiceException;
-    public ValidateTokenDTO validate(ValidateTokenDTO validateTokenDTO);
+    public ValidateTokenDTO validate(String bearerToken, ValidateTokenDTO validateTokenDTO) throws AuthServiceException;
 
 }

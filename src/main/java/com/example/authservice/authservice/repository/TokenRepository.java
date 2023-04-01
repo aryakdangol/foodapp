@@ -1,10 +1,10 @@
 package com.example.authservice.authservice.repository;
 
-import org.apache.catalina.User;
+import java.util.Optional;
 
 public interface TokenRepository {
 
-    public String getToken(String key);
+    public Optional<String> getToken(String key);
 
     public void saveToken(String key, String token);
 

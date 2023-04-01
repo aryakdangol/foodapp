@@ -10,10 +10,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/app")
@@ -34,8 +31,8 @@ public class AuthController {
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<UserResponseDTO> validateToken(ValidateTokenDTO validateTokenDTO){
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> validateToken(@RequestHeader("Authorization") String bearerToken, @RequestBody ValidateTokenDTO validateTokenDTO) throws AuthServiceException {
+        return new ResponseEntity<>(userService.validate(bearerToken, validateTokenDTO), HttpStatus.OK);
     }
 
 }
