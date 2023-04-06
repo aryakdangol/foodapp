@@ -1,0 +1,42 @@
+version: '3'
+services:
+  authservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3500:3500"
+      - "8080:8080"
+    depends_on:
+      - redis
+      - placement
+    environment:
+      - SECRET_KEY=kchabro
+
+  authservice-dapr:
+    image: "daprio/daprd:edge"
+    command: [
+      "./daprd",
+      "--app-id", "authservice",
+      "--app-port", "8080",
+      "--dapr-http-port", "3500",
+      "--dapr-grpc-port", "50001",
+      "--placement-host-address", "placement:50006",
+      "--resources-path", "/dapr"
+    ]
+    volumes:
+      - "./dapr/:/dapr"
+    depends_on:
+      - authservice
+    network_mode: "service:authservice"
+
+  redis:
+    image: "redis"
+    ports:
+      - "6380:6379"
+
+  placement:
+    image: "daprio/dapr"
+    command: [ "./placement", "--port", "50006" ]
+    ports:
+      - "50006:50006"
