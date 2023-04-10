@@ -10,8 +10,12 @@ name: Java CI with Gradle
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - 'authservice/**'
   pull_request:
     branches: [ "master" ]
+    paths:
+      - 'authservice/**'
 
 permissions:
   contents: read
