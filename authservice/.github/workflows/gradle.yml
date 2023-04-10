@@ -16,6 +16,8 @@ on:
     branches: [ "master" ]
     paths:
       - 'authservice/**'
+  workflow_dispatch:
+
 
 permissions:
   contents: read
